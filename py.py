@@ -40,3 +40,30 @@ def get_vif(xtrain):
                             for i in range(len(xtrain.columns))]
     
   return (vif_data)
+
+def get_regression_summary(lm, X, y, feature_names=None):
+  params = np.append(lm.intercept_,lm.coef_)
+  predictions = lm.predict(X)
+
+  newX = pd.DataFrame({"Constant":np.ones(len(X))}).join(pd.DataFrame(X))
+  MSE = (sum((y-predictions)**2))/(len(newX)-len(newX.columns))
+
+  # Note if you don't want to use a DataFrame replace the two lines above with
+  # newX = np.append(np.ones((len(X),1)), X, axis=1)
+  # MSE = (sum((y-predictions)**2))/(len(newX)-len(newX[0]))
+
+  var_b = MSE*(np.linalg.inv(np.dot(newX.T,newX)).diagonal())
+  sd_b = np.sqrt(var_b)
+  ts_b = params/ sd_b
+
+  p_values = [2 * (1 - stats.t.cdf(np.abs(i), (len(newX) - len(newX.columns)))) for i in ts_b]
+
+  sd_b = np.round(sd_b,3)
+  ts_b = np.round(ts_b,3)
+  p_values = np.round(p_values,3)
+  params = np.round(params,4)
+
+  myDF3 = pd.DataFrame()
+  # feature_names.insert(0, "Intercept")
+  myDF3["Name"],myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["pvalue"] = [feature_names, params,sd_b,ts_b,p_values]
+  return (myDF3.sort_values("Coefficients", key=abs, ascending=False).reset_index(drop=True))
